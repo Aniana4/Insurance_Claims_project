@@ -1,0 +1,347 @@
+---
+title: "Claim Car Insurance"
+author: "Montse Figueiro & Aniana Gonz?lez"
+date: "6 de julio de 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+##
+The goal of this competition is to better predict Bodily Injury Liability Insurance claim payments based on the characteristics of the insured customer's vehicle.
+
+
+* Cada Fila contiene la informaci?n anual sobre el seguro de un veh?culo.  
+* La variable "Claim_Amount" ha sido ajustada para tener en cuenta los efectos de las caracter?sticas no correspondientes al veh?culo, pero pueden tener interacciones interesantes con las variables del veh?culo.
+* "Calendar_Year" es el a?o en el que el veh?culo fu? asegurado.
+* "Household_ID" es la identificaci?n del hogar, en un hogar puede haber m?s de un veh?culo asegurado.
+* "Vehicle" es el n?mero que identifica al veh?culo, pero el mismo veh?culo no tiene porque tener el mismo n?mero en los diferentes a?os.
+* Tenemos para identifiar el veh?culo Model_Year, Blind_Make (manufacturer), Blind_Model, Blind_Submodel.
+* El resto de columnas contienen caracter?sticas del veh?culo as? como, otras caracter?sticas asociadas a la poliza. 
+* Tenemos dos datasets:
+    + Training de 2005-2007 para construir el modelo
+    + Test de 2008-2009 sobre el que realizaremos las predicciones.
+
+##Objetivo del Estudio
+
+* Problema de Clasificaci?n
+
+Determinar que veh?culos asegurados tendr?n siniestros con da?o corporal en los a?os 2008-2009, para ello utilizaremos el training dataset que nos aporta la informaci?n correspondiente a los a?os 2005-2006-2007, el cual volveremos a dividir en dos partes Training y Test data set para poder contrastar los resultados de la clasificaci?n. Por ?ltimo aplicaremos el modelo al Test dataset para 2008-2009.
+
+    + K-vecinos (necesario normalizar)
+    + Arboles de decisi?n (no necesario normalizar)
+    + Bayes (Aprendizaje Probabilistico)
+    + Random Forest
+    + Validaci?n: ROC, 
+
+* Problema de Regresi?n
+
+El objetivo del estudio es conseguir predecir en funci?n de las caracter?sticas del veh?culo los pagos por da?o corporal ocasionados anualmente por cada veh?culo.
+
+    + Random Forest Regresi?n.
+    + Previsi?n Datos num?ricos - M?todos de Regresi?n
+        + GLM
+        + LM (PCA)
+        + SVM
+        + GBM
+    + Neutral Networks
+    
+* Validaci?n: Caret, ROC (visualizaci?n), Cross-validation, jackknife
+
+Tipicamente en Seguros aplicamos los siguientes m?todos:
+
+Decision Trees, Random Forests, Gradient Boosting Machines, Neural Networks and Support Vector Machines
+
+##Code Book Variables
+
+[Dictionary](https://kaggle2.blob.core.windows.net/competitions-data/kaggle/2509/dictionary.html?sv=2012-02-12&se=2016-09-11T09%3A28%3A10Z&sr=b&sp=r&sig=LDorwQLrH%2BUJeduG58UByqlaxlatNMpte4iJZLhM0V8%3D)
+
+
+
+
+##Lectura de Datos
+```{r}
+library(data.table)
+train <- fread("train_set.csv")
+test <- read.csv("test_set.csv")
+str(test)
+summary(train)
+dim(train)
+head(train)
+```
+#problema de memoria
+library(pryr)
+
+```{r}
+memory.limit()
+memory.limit(size=16384)
+```
+
+###Cambiamos los tipos de variables:
+
+Las categ?ricas pasan a Factor, al igual que los a?os. 
+
+```{r}
+class(train)
+train <- as.data.frame(train)
+```
+
+```{r}
+library(plyr)
+train[6:20] <- lapply(train[6:20], as.factor) 
+train$NVCat <- as.factor(train$NVCat)
+train$OrdCat <- as.integer(train$OrdCat)
+train$Model_Year <- as.factor(train$Model_Year)
+train$Calendar_Year <- as.factor(train$Calendar_Year)
+str(train)
+summary(train)
+
+
+error <- train[train$Household_ID=="NA",]
+
+dim(erroresordcat)
+#OrdCat tiene niveles del 1 al 7 y ?
+```
+
+##Visualizaci?n de Datos
+#Numero de polizas por año
+
+Número de Pólizas por año
+```{r}
+count <- table(train$Calendar_Year)
+df <- data.frame(group=names(count),count)
+df$percent <-round((df$Freq/sum(df$Freq))*100,2)
+df <- df[-1]
+df
+```
+```{r}
+slices <- df$Freq 
+lbls <-df$Var1
+pct <- df$percent
+num <- df$
+lbls <- paste("Año ",lbls, sep="")
+lbls <- paste(lbls, pct,sep=": ") # add percents to labels 
+lbls <- paste(lbls,"%",sep="") # ad % to labels 
+pie(pct,labels = lbls, col=rainbow(length(lbls)),
+ 	main="Número de Observaciones por Año")
+```
+
+#Ver tanto por ciento de ada tipo de categorica
+```{r}
+library(scales) 
+
+ gCat1 <- ggplot(tr, aes(Cat1)) + 
+          geom_bar(aes(Cat1, (..count..)/sum(..count..)), width=0.5, fill = "grey") +
+          scale_y_continuous(labels=percent) + xlab(NULL) + 
+          ylab("% de tipos") + ggtitle("Distribución de las categorias") +  theme_bw()
+
+ gCat2 <- ggplot(tr, aes(Cat2)) + 
+           geom_bar(aes(Cat2, (..count..)/sum(..count..)), width=0.5, fill = "grey") +
+           scale_y_continuous(labels=percent) + xlab(NULL) + 
+          ylab("% de tipos") + ggtitle("Distribución de las categorias") +  theme_bw()
+
+ gCat3 <- ggplot(tr, aes(Cat3)) + 
+          geom_bar(aes(Cat3, (..count..)/sum(..count..)), width=0.5, fill = "grey") +
+          scale_y_continuous(labels=percent) + xlab(NULL) + 
+          ylab("% de tipos") + ggtitle("Distribución de las categorias") +  theme_bw()
+
+ gCat4 <- ggplot(tr, aes(Cat4)) + 
+          geom_bar(aes(Cat4, (..count..)/sum(..count..)), width=0.5, fill = "grey") +
+          scale_y_continuous(labels=percent) + xlab(NULL) + 
+          ylab("% de tipos") + ggtitle("Distribución de las categorias") +  theme_bw()
+
+
+#Tabla con Valores más frecuentes para cada Variable Categórica:
+values <- sapply(train,function(x) max(table(x)))
+values <- as.data.frame(values)
+nombres <- sapply(train,function(x) names(which.max(table(x))))
+nombresvar <- as.data.frame(nombres)
+clasevar <- sapply(train,function(x) class(x))
+clasevar <- as.data.frame(clasevar)
+Tabla_var_frecuentes <- as.data.frame(rownames(nombresvar))
+Tabla_var_frecuentes$Tipo <- nombresvar$nombres
+Tabla_var_frecuentes$Observaciones <- values$values
+Tabla_var_frecuentes$Clasevar <- clasevar$clasevar
+colnames(Tabla_var_frecuentes) <- c("Variable","Tipomasfrecuente","Observaciones","Clase_variable")
+Tabla_var_frecuentes <- Tabla_var_frecuentes[Tabla_var_frecuentes$Clase_variable=="factor",]
+Tabla_var_frecuentes$Porcentaje <- round((Tabla_var_frecuentes$Observaciones/nrow(train))*100,2)
+```
+
+#Tabla missing Values:
+
+```{r}
+train[train=="?"] <- NA
+Tabla_NAs <- as.data.frame(sapply(train, function(x) sum(is.na(x))))
+colnames(Tabla_NAs) <- c("NumNAs")
+obs_total <- nrow(train)
+Tabla_NAs$Porcentaje <- round((Tabla_NAs$NumNAs/nrow(train))*100,2)
+```
+Seleccionamos de la tabla solo los que tienen NAs:
+
+```{r}
+TablaNas_Positive <- Tabla_NAs[Tabla_NAs$NumNAs>0,]
+TablaNas_Positive
+```
+
+
+##Tratamiento Missing values
+
+Han sido borrados del Test dataset pero no del training dataset. Est?n como "?". 
+
+
+##Muestra de Datos
+
+El fichero "Train" que contiene datos de 2005, 2006 y 2007 tiene 13.184.290 observaciones y 35 columnas. De los cuales 95.605 han tenido siniestro con da?o corporal.
+```{r}
+positiveclaim <- train[train$Claim_Amount>0,]
+dim(positiveclaim)
+```
+
+Vamos a tomar una muestra del fichero "train" para trabajar los diferentes modelos y finalmente aplicarlo al fichero completo. Cogemos las 5.000.000 primeras filas.
+
+```{r}
+train_sample <- train[1:1000000,]
+class(train_sample)
+train_sample <- as.data.frame(train_sample)
+```
+
+
+
+
+Cuando el fichero ya est? limpio lo divido en dos partes:
+
+- 800.000 observaciones "train"
+- 200.000 observaciones "test"
+
+##KNN utilizando variables num?ricas
+
+```{r}
+names(train_sample)
+cols <- c("Var1","Var2","Var3","Var4","Var5","Var6","Var7","Var8","NVVar1","NVVar2","NVVar3","NV
+Var4" )
+claims <- c("Claim_Amount")
+data_num <-train_sample[,cols]
+head(train)
+data_num_labels <- train$Claim_Amount[1:1000000]
+data_num_labels <- ifelse(train$Claim_Amount==0,"0","1")
+data_num_labels <- as.factor(data_num_labels)
+head(data_num_labels)
+train_set_labels <- data_num_labels[1:800000]
+test_set_labels <- data_num_labels[800001:1000000]
+
+head(train_set)
+train_set <-data_num[1:800000,] 
+test_set <- data_num[800001:1000000,]
+prediccion <- knn(train=train_set,test=test_set,cl=train_set_labels,k=1)
+head(test_set)
+#Clasificaci?n K-vecinos (KNN)
+
+El algoritmo KNN requiere que todas las variables sean categ?ricas o continuas. Enel caso de tener de los dos tipos, las categ?ricas deben ser transformadas a num?ricas antes de aplicar el algoritmo. En el caso de que las categ?ricas tengan m?s de dos categor?as usaremos variables dummy.
+cor(train_sample)
+```{r}
+library(caret)
+train_sample$Cat1 <- predict(dummyVars(~ Cat1, data = train_sample), newdata = train_sample)
+train_sample$Cat1 <- predict(dummyVars(~ Cat1, data = train_sample), newdata = train_sample)
+train_sample$Cat1 <- predict(dummyVars(~ Cat1, data = train_sample), newdata = train_sample)
+train_sample$Cat1 <- predict(dummyVars(~ Cat1, data = train_sample), newdata = train_sample)
+train_sample$Cat1 <- predict(dummyVars(~ Cat1, data = train_sample), newdata = train_sample)
+train_sample$Cat1 <- predict(dummyVars(~ Cat1, data = train_sample), newdata = train_sample)
+train_sample$Cat1 <- predict(dummyVars(~ Cat1, data = train_sample), newdata = train_sample)
+train_sample$Cat1 <- predict(dummyVars(~ Cat1, data = train_sample), newdata = train_sample)
+train_sample$Cat1 <- predict(dummyVars(~ Cat1, data = train_sample), newdata = train_sample)
+head(train_sample)
+class(train_sample)
+
+pruebaknn <- train_sample[,c("Var1","Var2","Var3","Var4")]
+class(pruebaknn$Cat1)
+levels <- train_sample[,35]
+
+levels <- ifelse(levels==0,"0","1")
+levels <- as.factor(levels)
+unique(levels)
+count(levels)
+
+pruebaknn_train <- pruebaknn[1:4000000,]
+pruebaknn_test <- pruebaknn[4000001:5000000,]
+
+train_levels <- levels[1:4000000]
+test_levels <- levels[4000001:5000000]
+class(test_levels)
+pred <- knn(train=pruebaknn_train,test=pruebaknn_test,cl=train_levels,k=3,use.all = FALSE)
+header <- unlist(strsplit(colnames(dummies), '[.]'))[2 * (1:ncol(dummies))]
+Cat1 <- factor(dummies %*% 1:ncol(dummies), labels = header)
+```
+str(train_sample)
+* Necesitamos normalizar los datos
+* El objetivo es clasificar los datos en "si" tienen da?o corporal o "no" tiene da?o corporal
+
+
+
+
+#problema de memoria
+library(pryr)
+
+```{r}
+memory.limit()
+object_size(train)
+memory.limit(size=16384)
+```
+##Substituimos el importe por 0 o 1 (no importe - si importe)
+prueba <- train[sample(nrow(train), 100000), ]
+sum(prueba$Claim_Amount)
+prueba$damage <- ifelse(prueba$Claim_Amount==0,"0","1")
+prueba$damage <- as.factor(prueba$damage)
+sum(prueba$Claim_Amount!=0)
+sum(prueba$Claim_Amount)
+
+###N?mero de casos con da?o corporal.
+sum(train$Claim_Amount==0)
+sum(train$Claim_Amount!=0)
+sum(prueba$Claim_Amount!=0)
+
+#Vamos a trabajar inicialmente sobre una muestra de 2 millones de observaciones:
+````{r}
+train_sample <- train[sample(nrow(train), 2000000), ]
+train_sample <- as.data.frame(train_sample)
+dim(train_sample)
+str(train_sample)
+
+```
+
+
+#Comprobacion filas duplicadas
+```{r}
+anyDuplicated(train_sample)
+train_sample[duplicated(train_sample),]
+head(train_sample)
+```
+##densidad
+
+```{r}
+install.packages("tigerstats")
+library(tigerstats)
+quantile(train_sample$Claim_Amount)
+summary(train_sample$Claim_Amount)
+quantile(train_sample$Claim_Amount,probs=c(0.85,0.99,1))
+nrow(train_sample)
+positiveclaim <- train_sample[train_sample$Claim_Amount>0,]
+nrow(positiveclaim)
+
+##Correlaciones entre variables???
+cor(train_sample$Var1,train_sample$Var2)
+cor(train_sample$Var1,train_sample$Var6)
+CrossTable(x=train_sample$Cat1,y=train_sample$Cat2)
+
+#de 2000000 solo 14517 han tenido siniestro, esto es el 0.7%
+densityplot(~Claim_Amount,data=train_sample,
+       xlab="Importe Reclamacion",
+       main="Densidad Reclamaciones")
+boxplot(train_sample$Claim_Amount,main="Importe Siniestros Da?o Corporal",ylab="Importe")
+```
+
+write.csv(train, file = "train_clean.csv")
+#Tratamiento?
+str(train)
+summary(train_sample$Blind_Make)
+
