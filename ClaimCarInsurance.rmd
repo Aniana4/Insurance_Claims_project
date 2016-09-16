@@ -64,6 +64,7 @@ Decision Trees, Random Forests, Gradient Boosting Machines, Neural Networks and 
 ```{}
 library(data.table)
 train <- fread("train_set.csv")
+head (train)
 test <- read.csv("test_set.csv")
 str(train)
 summary(train)
@@ -89,6 +90,7 @@ train <- as.data.frame(train)
 ```
 
 ```{r}
+str(train)
 library(plyr)
 train[6:20] <- lapply(train[6:20], as.factor) 
 train$NVCat <- as.factor(train$NVCat)
@@ -215,6 +217,85 @@ Tabla3NAs <- as.data.frame(sapply(casoscon3NA, function(x) sum(is.na(x))))
 colnames(Tabla3NAs) <- "3NA"
 Tabla1NAs$`3NA` <- Tabla3NAs$`3NA`
 ```
+```{r}
+casoscon4NA <- train[train$NAS==4,]
+Tabla4NAs <- as.data.frame(sapply(casoscon4NA, function(x) sum(is.na(x))))
+colnames(Tabla4NAs) <- "4NA"
+Tabla1NAs$`4NA` <- Tabla4NAs$`4NA`
+Tabla1NAs
+```
+
+Hay 8431 observaciones con 48 siniestros con daño corporal a los que les falta Blind_Make, Blind_Model y Blind_Submodel:
+```{r}
+obs_without_model <- train[is.na(train$Blind_Submodel),]
+dim(obs_without_model)
+```
+Cuantos modelos de vehículos diferentes tenemos en la base de datos:
+```{r}
+cols_model <- c("Model_Year","Blind_Make","Blind_Model","Blind_Submodel","Cat1","Cat3","Cat4","Cat5","Cat6","Cat8","Cat9","Cat10","Cat11")
+modelcar <- train[,cols_model]
+modelcar$count <- 1
+Difmodelcar <- aggregate(count~. ,modelcar,sum)
+head(Difmodelcar[order(Difmodelcar$count),])
+#El count me dice cuantos coches con las mismas caracteristicas existen. El primero solo hay 1, del segudo 771....
+dim(Difmodelcar[Difmodelcar$Model_Year==2004,])
+head(Difmodelcar)
+dim(Difmodelcar)
+```
+Variable "OrdCat" con Missing Value:
+
+```{r}
+NAOrdCat <- train[is.na(train$OrdCat),]
+head(NAOrdCat)
+dim(NAOrdCAt)
+
+``
+
+#Analizar los datos de la poliza
+head(train)
+cols <- c("NVCat", "NVVar1","NVVar2","NVVar3","NVVar4", "Claim_Amount")
+Bd_polizas <- train[,cols]
+head(Bd_polizas)
+dim(Bd_polizas)
+
+#Me quedo con las del importe mayor de 0
+ver <- Bd_polizas[Bd_polizas$Claim_Amount>0,]
+class(Bd_polizas)
+ver <- Bd_polizas[duplicated(polizasclaim$Claim_Amount),]
+ver2 <- ver[ver$Claim_Amount>0,]
+head(ver)
+
+head(Bd_polizas[order(Bd_polizas$Claim_Amount),])
+
+#Tengo 52 polizas distintas
+Bd_polizas$count <- 1
+Difpoliza <- aggregate(count~ NVCat + NVVar1 + NVVar2 + NVVar3 + NVVar4 ,Bd_polizas,sum)
+head(Difpoliza[order(-Difpoliza$count),])
+sum(Bd_polizas$Claim_Amount)
+dim(Difpoliza)
+tail(Difpoliza)
+
+
+
+
+str(Bd_polizas)
+Bd_polizas[order(Bd_polizas$NVCat,Bd_polizas$Claim_Amount),]
+Bd_polizas <- Bd_polizas[Bd_polizas$NVCat=="A" &  Bd_polizas$Claim_Amount > 0,]
+head(Bd_polizas)
+
+
+install.packages("VIM")
+
+data <- train[1:100000,]
+library(VIM)
+aggr_plot <- aggr(data, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE, labels=names(data), cex.axis=.7, gap=3, ylab=c("Histogram of missing data","Pattern"))
+
+#marginplot(data[c(,15)])
+install.packages("mice")
+library(mice)
+tempData <- mice(data,m=5,maxit=50,meth='pmm',seed=500)
+summary(tempData)
+```
 
 Número total de casos con daños corporal según el número de missing values
 ```{r}
@@ -296,7 +377,7 @@ Cuando el fichero ya está limpio lo divido en dos partes:
 ```{r}
 summary(train)
 names(train_sample)
-cols <- c("Cat8","Var1","Var2","Var3","Var4","Var5","Var6","Var7","Var8")
+cols <- c("Var1","Var2","Var3","Var4","Var5","Var6","Var7","Var8")
 claims <- c("classification")
 data_num <-train_sample[,cols]
 head(data_num)
@@ -317,7 +398,10 @@ train_set[is.na(train_set$Cat8),] <- "A"
 summary(test_set$Cat8)
 
 prediccion <- knn(train=train_set,test=test_set,cl=train_set_labels,k=15)
+table(prediccion)
 ```
+
+
 
 #Clasificación K-vecinos (KNN)
 
