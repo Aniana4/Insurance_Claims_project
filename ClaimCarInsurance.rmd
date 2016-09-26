@@ -111,12 +111,14 @@ train[train=="?"] <- NA
 
 ```{r}
 #Prueba
+library(dummies)
+library(caret)
 class(train)
 train_2 <- train[complete.cases(train),]
-
-for(level in unique(train_2$)){
-  example[paste("dummy", level, sep = "_")] <- ifelse(example$strcol == level, 1, 0)
-}
+str(train_2)
+dmy <- dummyVars(" ~ Cat1+Cat2+Cat3+Cat4+Cat5+Cat6+Cat7+Cat8+Cat9+Cat10+Cat11+Cat12+OrdCat+NVCat", data = train_2)
+train_3 <- data.frame(predict(dmy, newdata = train_2))
+print(train_3)
 ```
 
 
