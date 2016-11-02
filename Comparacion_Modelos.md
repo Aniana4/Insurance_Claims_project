@@ -1,10 +1,9 @@
-RESULTADOS MODELOS
-==================
+COMPARATIVA DE LOS MODELOS APLICADOS
+------------------------------------
 
-MODELOS DE CLASIFICACIÓN
-------------------------
+### MODELOS DE CLASIFICACIÓN
 
-### MODELO DE CLASIFICACIÓN CON GLM
+#### MODELO DE CLASIFICACIÓN CON GLM
 
 Los resultados obtenidos para la clasificación con GLM:
 
@@ -48,7 +47,7 @@ Los resultados obtenidos para la clasificación con GLM:
 </table>
 
 "model\_train\_clas" En el caso del fichero train en el que la clase
-esta desequilibrada, cualquier modelo que no tenga ninguna clase de
+está desequilibrada, cualquier modelo que no tenga ninguna clase de
 penalización tenderá a clasificar en la clase mayoritaria, en este caso
 0, por lo que el Accuracy tenderá a ser elevado aunque no prediga bien
 ya que un alto porcentaje de los datos tienen importe 0.
@@ -60,8 +59,134 @@ aumentará porque el número de TRUE POSITIVE aumenta pero también lo hace
 el número de False Positive que es muy elevado, esto sucede porque
 clasifica con una probabilidad aproximadamente del 50% para cada clase.
 
-MODELOS DE REGRESIÓN
---------------------
+Con esta tabla podemos comprobar que el modelo que mejor se ajusta está
+entrenado con el train equilibrado, basándonos en su precisión del 75%.
+Su matriz de confusión es la siguiente:
+
+<table>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="left">no</th>
+<th align="left">si</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">no</td>
+<td align="left">624705</td>
+<td align="left">5790</td>
+</tr>
+<tr class="even">
+<td align="left">si</td>
+<td align="left">2647039</td>
+<td align="left">18033</td>
+</tr>
+</tbody>
+</table>
+
+Como podemos ver aunque el porcentaje de precisión es alto, la
+clasificación no es buena puesto que el número de Falsos Positivos es
+muy elevado, con lo que podemos confirmar que con el modelo de Lineal
+Generalizado las variables independientes no aportan información
+significativa para clasificar.
+
+#### MODELO DE CLASIFICACIÓN CON RANDOM FOREST
+
+Hemos realizado la clasificación tanto con el paquete randomForest como
+el paquete Caret con k-folder. Los resultados para los dos ficheros, el
+desequilibrado y el equilibrado mediante método Under-Sampling son los
+siguientes:
+
+<table>
+<thead>
+<tr class="header">
+<th align="left">MODELO</th>
+<th align="left">Accuracy</th>
+<th align="left">Precisión</th>
+<th align="left">Recall</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">RF Train</td>
+<td align="left"><strong>0.730748</strong></td>
+<td align="left">0.2409016</td>
+<td align="left">0.00655891</td>
+</tr>
+<tr class="even">
+<td align="left">RF Train Caret</td>
+<td align="left">0.6445112</td>
+<td align="left">0.3096168</td>
+<td align="left">0.006345132</td>
+</tr>
+<tr class="odd">
+<td align="left">RF Train down</td>
+<td align="left">0.194633</td>
+<td align="left">0.7939806</td>
+<td align="left">0.007089187</td>
+</tr>
+<tr class="even">
+<td align="left">RF Train down Caret</td>
+<td align="left">0.1789495</td>
+<td align="left"><strong>0.8170256</strong></td>
+<td align="left">0.007153431</td>
+</tr>
+</tbody>
+</table>
+
+En el caso de los ficheros desequilibrados con alto porcentaje de
+observaciones con clase 0, el Accuracy suele ser elevado puesto que
+tiende a clasificar en la clase mayoritaria, no está clasificando todos
+en 0 porque no estamos utilizando el fichero Train Completo, con el
+fichero completo ningún modelo clasifica observaciones en la clase 1.
+
+Al equilibrar el fichero tiende a clasificar el mismo número de
+observaciones con clase 0 y con clase 1. Esto se suele solucionar
+calibrando las probabilidades.
+
+Calibrado de probabilidades para el modelo con mayor precisión
+(clasificamos como 1 cuando la probabilidad es mayor que 0.6, 0.7 o 0.95
+respectivamente):
+
+<table>
+<thead>
+<tr class="header">
+<th align="left">MODELO</th>
+<th align="left">Accuracy</th>
+<th align="left">Precisión</th>
+<th align="left">Recall</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">RF Train down Caret 60</td>
+<td align="left">0.2439089</td>
+<td align="left">0.7481426</td>
+<td align="left">0.0071190</td>
+</tr>
+<tr class="even">
+<td align="left">RF Train down Caret 70</td>
+<td align="left">0.3178382</td>
+<td align="left">0.6653654</td>
+<td align="left">0.0070261</td>
+</tr>
+<tr class="odd">
+<td align="left">RF Train down Caret 95</td>
+<td align="left">0.179567</td>
+<td align="left">0.81627</td>
+<td align="left">0.00715226</td>
+</tr>
+</tbody>
+</table>
+
+Con las variables aportadas el modelo no clasifica bien, el número de
+Falsos Positivos y Falsos Negativos es muy elevado. En el caso de
+seleccionar como clase 1 aquellos que tienen una probabilidad mayor del
+95% nos da 2.699.415 de observaciones como clase 1 erroneamente (Falsos
+Positivos).
+
+### MODELOS DE REGRESIÓN
 
 Pasos realizados:
 
@@ -73,7 +198,7 @@ Pasos realizados:
 -   Predicción Claim\_Amount fichero Test
 -   Cálculo RSME de las predicciones del fichero Test
 
-#### MODELO DE REGRESIÓN LINEAL
+##### MODELO DE REGRESIÓN LINEAL
 
 Resultados validados con el fichero Test con 3.295.567 observaciones (El
 entrenamiento se ha hecho por triplicado: train entero,train agregado y
@@ -142,7 +267,7 @@ el dataset.**
 
 #### MODELOS DE REGRESIÓN NO LINEALES
 
-Todos los modelos de predicción no lineal se han realizado a partir de
+Todos los modelos de predicción no lineales se han realizado a partir de
 una muestra aleatoria de 5000 observaciones del fichero Train Agregado y
 Train Down Sample, lo hemos realizado de ésta manera por los tiempos
 computacionales y para poder ver de una manera rápida si existe relación
