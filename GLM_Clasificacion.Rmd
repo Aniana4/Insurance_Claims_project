@@ -1,8 +1,8 @@
 ---
-title: "GLM_Clasificacion"
+title: "Modelo lineal generalizado"
 author: "Aniana González & Montse Figueiro"
 date: "25 de octubre de 2016"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -50,7 +50,7 @@ test_clas <- test[,"clasification"]
 ```
 
 
-Visualizamos las caracteristicas de los ficheros
+Visualizamos las características de los ficheros
 
 ```{r}
 head(train)
@@ -65,7 +65,7 @@ head(train_downSample)
 Hacemos el model GLM para predecir si va a existir daño corporal o no. Utilizamos el fichero con los datos agregados pero sin balancear.
 
 Nos da como resultado un AIC de 335.472
-Calculamos R^2 dandonos como resultado 0.2720185
+Calculamos R^2 dándonos como resultado 0.2720185
 
 ```{r}
 model_train_clas=glm(clasification~ Model_Year+
@@ -120,6 +120,7 @@ True Positives / (True Positives + False Negatives).
 ###Curva ROC sobre el test
 
 ```{r}
+library(ROCR)
 Pred_auxiliar_test= prediction(test_glm$prediccion, clasificacion_test, label.ordering = NULL)
 class(Pred_auxiliar_test)
 auc.tmp_test = performance(Pred_auxiliar_test, "auc")
@@ -204,7 +205,7 @@ abline(a=0,b=1)
 
 ###Seleccionamos el Modelo con mayor Precisión
 
-En éste caso es muy dificil la valoración de los modelos puesto que la clasificación no es buena, hay un elevado número de Falsos Positivos y de Falsos Negativos, lo que nos da a entender que las variables independientes no influyen en el hecho de tener daño corporal o no.
+En éste caso es muy difícil la valoración de los modelos puesto que la clasificación no es buena, hay un elevado número de Falsos Positivos y de Falsos Negativos, lo que nos da a entender que las variables independientes no influyen en el hecho de tener daño corporal o no.
 
 ```{r}
 test$classGLM <- clasificacion_test
